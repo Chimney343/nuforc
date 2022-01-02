@@ -192,14 +192,16 @@ class NUFORCScraper:
         date_today = date.today().strftime('%Y_%m_%d')
 
         filename_path = path / f"events_{date_today}.pkl"
-        metadata_filename = path / f"events_metadata{date_today}.pkl"
+        metadata_filename = path / f"events_metadata_{date_today}.pkl"
         with open(filename_path, "wb") as f:
             pickle.dump(self.events, f)
         with open(metadata_filename, "wb") as f:
             pickle.dump(self.events_metadata, f)
 
     def scrape(self):
+        logger.info(f"Scraper initialized.\nCreating event dates lookup...")
         self.events_dates_lookup = self.make_event_lookup()
+        logger.info(f"Event dates lookup created. Downloading {len(self.events_dates_lookup)} events.")
         events = download_multiple_nuforc_events(
             event_urls=self.events_dates_lookup.values(),
             n_scraping_retries=self.n_scraping_retries,
@@ -207,6 +209,7 @@ class NUFORCScraper:
         self.events = [event.event_summary for event in events]
         self.events_metadata = [event.metadata for event in events]
         self.save_output()
+        logger.info(f"Scraping finished.")
 
 
 class NUFORCMonthlyEventsSummary:
