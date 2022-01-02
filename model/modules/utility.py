@@ -17,7 +17,7 @@ def get_page(url, n_scraping_retries=10, page_type=''):
         except (ConnectTimeout, ConnectionError, ReadTimeout) as e:
             attempt += 1
             if attempt != n_scraping_retries:
-                logger.debug(
+                logger.warning(
                     f"{page_type} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
                 )
             elif attempt == n_scraping_retries:
