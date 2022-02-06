@@ -249,6 +249,8 @@ def get_country_from_location(location):
         return get_valid_country_name(match.split("/")[0])
     elif "," in match:
         return get_valid_country_name(match.split(",")[0])
+    else:
+        get_valid_country_name(match)
 
 
 def get_city_from_location(location):

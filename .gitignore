@@ -24,6 +24,11 @@ share/python-wheels/
 *.egg-info/
 .i
 nstalled.cfg
+
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
 *.egg
 MANIFEST
 
@@ -73,8 +78,16 @@ instance/
 docs/_build/
 
 # PyBuilder
+
 .pybuilder/
 target/
+
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+
 # IPython
 profile_default/
 ipython_config.py
@@ -82,7 +95,8 @@ ipython_config.py
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+.python-version
+
 
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
@@ -139,11 +153,13 @@ cython_debug/
 *.ipynb
 
 # Ignored files
+google_api_key.yaml,
 
 # Ignored directories
-# Ignored folders
 .idea/
-
-
+incoming/
+data/
+output/
+.idea/
 
 
