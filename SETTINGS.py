@@ -1,3 +1,8 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # take environment variables from .env.
+
 """
 Scraper settings.
 """
@@ -6,6 +11,11 @@ TIMESPAN_START = "2021-01-01"
 TIMESPAN_END = "2021-01-10"
 N_SCRAPING_RETRIES = 20
 OUTPUT_FOLDER = 'data'
+
+"""
+API keys.
+"""
+GOOGLE_API_KEY=os.getenv("GOOGLE_API_KEY")
 
 """
 Logger settings.
