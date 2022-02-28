@@ -4,7 +4,8 @@ import pickle
 import logging
 from pathlib import Path
 from bs4 import BeautifulSoup
-from model.modules.wrangling import make_event_summary, parse_time
+from model.modules.wrangling import NUFORCReportProcessor
+import validators
 from model.modules.utility import (
     get_page,
     make_monthly_event_summary_lookup,
@@ -20,10 +21,9 @@ import logging
 logger = logging.getLogger("model.modules.scraping")
 
 def make_and_scrape_nuforc_event(event_url, n_scraping_retries):
-    event = NUFORCEvent(event_url=event_url, n_scraping_retries=n_scraping_retries)
+    event = NUFORCReport(report_url=event_url, n_scraping_retries=n_scraping_retries)
     event.scrape()
     return event
-
 
 def download_multiple_nuforc_events(event_urls, n_scraping_retries=10):
     futures = []
@@ -247,8 +247,8 @@ class NUFORCMonthlyEventsSummary:
         self.events_dates_lookup = events
 
     def __make_and_scrape_nuforc_event(self, event_url):
-        event = NUFORCEvent(
-            event_url=event_url, n_scraping_retries=self.n_scraping_retries
+        event = NUFORCReport(
+            report_url=event_url, n_scraping_retries=self.n_scraping_retries
         )
         event.scrape()
         return event
@@ -314,54 +314,53 @@ class NUFORCMonthlyEventsSummary:
             )
 
 
-class NUFORCEvent:
-    def __init__(self, event_url=None, raw_event_text=None, n_scraping_retries=5):
-        self.event_url = event_url
-        self.raw_event_text = raw_event_text
+class NUFORCReport:
+    def __init__(self, report_url=None, raw_report=None, n_scraping_retries=5):
+        assert report_url is not None or raw_report is not None, "Provide either report URL or raw report teRext."
+        if report_url:
+            assert validators.url(report_url), f"{report_url} is not a valid URL."
+            assert raw_report is None, "Provide either report URL or raw report text; cannot provide both."
+
+        self.report_url = report_url
+        self.raw_report = raw_report
         self.n_scraping_retries = n_scraping_retries
         self.metadata = {
-            "url": self.event_url,
+            "url": self.report_url,
             "status": "not scraped",
             "start time": None,
             "end time": None,
             "duration": None,
         }
 
-    def __get_event_page(self):
-        return get_page(
-            url=self.event_url,
+    def _get_report_page(self):
+        self.page = get_page(
+            url=self.report_url,
             n_scraping_retries=self.n_scraping_retries,
-            page_type="Event",
+            page_type="Report",
         )
+        self.page_status_code = self.page.status_code
+
+    def _get_raw_report(self):
+        self._get_report_page()
+        if self.page.status_code == 200 and self.page.text == '':
+            self.raw_report = self.report_url + "\n" + "Blank report"
+        elif self.page.status_code == 200:
+            soup = BeautifulSoup(self.page.text, "html.parser")
+            raw_report = "".join(
+            [tag.text for tag in soup.find_all("tr")])
+            self.raw_report = self.report_url + "\n" + raw_report
+        else:
+            self.raw_report = self.report_url + "\n" + "Unable to download report"
+
+    def _process_report(self):
+        if not self.raw_report:
+            self._get_raw_report()
+        report_processor = NUFORCReportProcessor(raw_report=self.raw_report)
+        self.info = report_processor.get_report()
 
     def scrape(self):
         start_time = datetime.now()
-        # Download and parse event page if raw event text wasn't submitted.
-        if not self.raw_event_text:
-            self.page = self.__get_event_page()
-            if self.page is None:
-                self.raw_event_text = (
-                    self.event_url + "\n" + "Unable to download event page."
-                )
-            elif self.page.text == "":
-                self.raw_event_text = self.event_url + "\n" + "Blank event page."
-            else:
-                try:
-                    soup = BeautifulSoup(self.page.text, "html.parser")
-                    self.raw_event_text = "".join(
-                        [tag.text for tag in soup.find_all("tr")]
-                    )
-                    self.raw_event_text = self.event_url + "\n" + self.raw_event_text
-                except:
-                    self.raw_event_text = (
-                        self.event_url
-                        + "\n"
-                        + "Unable to parse BeautifulSoup from downloaded page."
-                    )
-
-        # At this point, it's ensured that there's some raw event text under self.raw_event_text attribute (either
-        # downloaded or passed to the object constructor) and event text is read.
-        self.event_summary = make_event_summary(self.raw_event_text)
+        self._process_report()
         end_time = datetime.now()
         self.metadata.update(
             {
@@ -372,4 +371,7 @@ class NUFORCEvent:
             }
         )
 
-        logger.info((f"Event {self.event_url} scraped."))
+        if self.report_url:
+            logger.info((f"Report @ {self.report_url} scraped."))
+        else:
+            logger.info(f"Raw report scraped.")
