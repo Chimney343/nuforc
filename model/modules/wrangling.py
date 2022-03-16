@@ -1,26 +1,26 @@
+import logging
 import re
 from datetime import datetime
+
 import parsedatetime
 import us
 from iso3166 import countries
 
-from model.lookups.geography_lookups import (
-    CAN_PROVINCE_NAMES,
-    NON_ISO_3166_COUNTRY_NAMES,
-)
-
+from model.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
 from model.modules.regexes import REGEX_DICT
 
-import logging
 logger = logging.getLogger("model.modules.wrangling")
 
 """
 RAW REPORT ANALYSIS
 """
+
+
 class NUFORCReportProcessor:
-    def __init__(self, raw_report):
+    def __init__(self, raw_report, report_url=None):
         self.raw_report = raw_report
         self.is_raw_report_correct = self._validate_raw_report(raw_report)
+        self.report_url = report_url
 
     def _validate_raw_report(self, raw_report):
         failed_raw_report_indicators = [
@@ -30,51 +30,45 @@ class NUFORCReportProcessor:
         ]
         if not isinstance(raw_report, str):
             return False
-        if any(
-                indicator in raw_report for indicator in failed_raw_report_indicators
-        ):
+        elif any(indicator in raw_report for indicator in failed_raw_report_indicators):
             return False
+        else:
+            return True
 
     def process(self, raw_report=None):
         if raw_report is None:
-            raw_report=self.raw_report
+            raw_report = self.raw_report
 
-        self.url = extract_url(raw_report=raw_report)
-        self.occurred_time = extract_time(
-            raw_report=raw_report, time_type="occurred_time"
-        )
-        self.reported_time = extract_time(
-            raw_report=raw_report, time_type="reported_time"
-        )
-        self.entered_as_time = extract_time(
-            raw_report=raw_report, time_type="entered_as_time"
-        )
+        self.occurred_time = extract_time(raw_report=raw_report, time_type="occurred_time")
+        self.reported_time = extract_time(raw_report=raw_report, time_type="reported_time")
+        self.entered_as_time = extract_time(raw_report=raw_report, time_type="entered_as_time")
         self.shape = extract_shape(raw_report=raw_report)
         self.duration = extract_duration(raw_report=raw_report)
         self.city = extract_city(raw_report=raw_report)
         self.state = extract_state(raw_report=raw_report)
-        self.state_abbreviation = extract_state_abbreviation(
-            raw_report=raw_report
-        )
+        self.state_abbreviation = extract_state_abbreviation(raw_report=raw_report)
         self.country = extract_country(raw_report=raw_report)
         self.description = extract_description(raw_report=raw_report)
-        
+
     def get_report(self):
         self.process()
-        
-        return {"raw_report": self.raw_report,
-                "url": self.url,
-                "occurred_time": self.occurred_time,
-                "reported_time": self.reported_time,
-                "entered_as_time": self.entered_as_time,
-                "shape": self.shape,
-                "duration": self.duration,
-                "city": self.city,
-                "state": self.state,
-                "state_abbreviation": self.state_abbreviation,
-                "country": self.country,
-                "description": self.description}
-    
+        return {
+            "report_ok": self.is_raw_report_correct,
+            "raw_report": self.raw_report,
+            "url": self.report_url,
+            "occurred_time": self.occurred_time,
+            "reported_time": self.reported_time,
+            "entered_as_time": self.entered_as_time,
+            "shape": self.shape,
+            "duration": self.duration,
+            "city": self.city,
+            "state": self.state,
+            "state_abbreviation": self.state_abbreviation,
+            "country": self.country,
+            "description": self.description,
+        }
+
+
 def extract_description(raw_report):
     try:
         info = "".join(raw_report.splitlines()[2:]).strip()
@@ -190,9 +184,7 @@ def get_state_info(location):
             return state_info
 
     elif canadian_state_abbreviation_regex.search(location) is not None:
-        canadian_state_abbreviation = canadian_state_abbreviation_regex.search(
-            location
-        ).group()
+        canadian_state_abbreviation = canadian_state_abbreviation_regex.search(location).group()
         canadian_state = CAN_PROVINCE_NAMES.get(canadian_state_abbreviation)
         if canadian_state is not None:
             state_info = {
@@ -201,6 +193,7 @@ def get_state_info(location):
                 "country": "Canada",
             }
             return state_info
+
 
 def get_valid_country_name(name, custom_lookup=NON_ISO_3166_COUNTRY_NAMES):
     """
@@ -319,4 +312,3 @@ def clean_time_string(t):
     pattern = re.compile("|".join(replacements.keys()))
     t = pattern.sub(lambda m: replacements[re.escape(m.group(0))], t)
     return t
-
