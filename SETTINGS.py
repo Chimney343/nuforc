@@ -16,7 +16,8 @@ OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
 """
 API keys.
 """
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+# Google Geocoding API key.
+API_KEY=os.getenv("API_KEY")
 
 """
 Logger settings.
@@ -47,6 +48,12 @@ LOGGING_CONFIG = {
             "propagate": False,
         },
         "model.modules.utility": {
+            "level": "INFO",
+            "handlers": ["console"],
+            "formatter": "simple",
+            "propagate": False,
+        },
+        "model.modules.geocoding": {
             "level": "INFO",
             "handlers": ["console"],
             "formatter": "simple",

@@ -1,11 +1,12 @@
 import concurrent.futures
+from urllib.parse import urljoin
+import pickle
 import logging
 import pickle
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urljoin
-
 import validators
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
