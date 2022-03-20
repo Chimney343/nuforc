@@ -1,7 +1,6 @@
 import concurrent.futures
 from urllib.parse import urljoin
 import pickle
-import logging
 from pathlib import Path
 from bs4 import BeautifulSoup
 from model.modules.wrangling import make_event_summary, parse_time
