@@ -1,18 +1,18 @@
 import concurrent.futures
-from urllib.parse import urljoin
-import pickle
 import logging
 import pickle
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urljoin
+
 import validators
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.relativedelta import *
 
-from model.modules.utility import get_page, is_date, last_day_of_month, make_month_root_lookup
+from model.modules.utility import (get_page, is_date, last_day_of_month,
+                                   make_month_root_lookup)
 from model.modules.wrangling import NUFORCReportProcessor, parse_time
 
 logger = logging.getLogger("model.modules.scraping")

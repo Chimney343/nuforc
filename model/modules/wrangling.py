@@ -6,7 +6,8 @@ import parsedatetime
 import us
 from iso3166 import countries
 
-from model.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
+from model.lookups.geography_lookups import (CAN_PROVINCE_NAMES,
+                                             NON_ISO_3166_COUNTRY_NAMES)
 from model.modules.regexes import REGEX_DICT
 
 logger = logging.getLogger("model.modules.wrangling")

@@ -1,14 +1,13 @@
+import logging
 import os
 import pickle
+import time
 from datetime import date
-from typing import List
+from pathlib import Path
+from typing import List, Union
+
 import pandas as pd
 import requests
-import time
-from pathlib import Path
-from typing import Union
-
-import logging
 
 logger = logging.getLogger("model.modules.geocoding")
 
@@ -77,9 +76,9 @@ class NUFORCGeocoder:
                 data = self._load_pickle(df_input=path)
 
             df = pd.DataFrame(data)
-            df = pd.DataFrame(
-                df['raw_address'].to_list(), columns=self.unique_location_parts
-            ).merge(df[df.columns[1:]], left_index=True, right_index=True)
+            df = pd.DataFrame(df['raw_address'].to_list(), columns=self.unique_location_parts).merge(
+                df[df.columns[1:]], left_index=True, right_index=True
+            )
             logger.info(f'Supplementary results loaded from {path}')
             return df
 
