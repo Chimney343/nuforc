@@ -17,7 +17,7 @@ OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
 API keys.
 """
 # Google Geocoding API key.
-API_KEY=os.getenv("API_KEY")
+API_KEY = os.getenv("API_KEY")
 
 """
 Logger settings.

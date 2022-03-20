@@ -18,5 +18,6 @@ def execute_scraping():
     scraper.scrape()
     scraper.save_events()
 
+
 if __name__ == "__main__":
     execute_scraping()
