@@ -1,8 +1,9 @@
-import SETTINGS
 import logging.config
+
+import SETTINGS
 from model.modules.scraping import NUFORCScraper
 
-logging.config.dictConfig(SETTINGS.LOGGER_CONFIG)
+logging.config.dictConfig(SETTINGS.LOGGING_CONFIG)
 logger = logging.getLogger("root")
 
 
@@ -15,7 +16,7 @@ def execute_scraping():
         output_folder=SETTINGS.OUTPUT_FOLDER,
     )
     scraper.scrape()
-
+    scraper.save_events()
 
 if __name__ == "__main__":
     execute_scraping()
