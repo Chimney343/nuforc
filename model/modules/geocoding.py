@@ -8,30 +8,35 @@ from typing import List, Union
 
 import pandas as pd
 import requests
+from tqdm.autonotebook import tqdm
 
 logger = logging.getLogger("model.modules.geocoding")
 
 
 class NUFORCGeocoder:
     available_input_types = ['.pkl']
-
+    address_locations = ['city', 'state', 'state_abbreviation', 'country']
+    supplementary_df = None
+    output_df = None
     def __init__(
         self,
         input_df: Union[pd.DataFrame, Path],
-        supplementary_results: Union[pd.DataFrame, Path] = None,
+        supplementary_df: Union[pd.DataFrame, Path] = None,
         api_key=os.getenv("API_KEY"),
         output_folder: Path() = Path.cwd(),
     ):
         assert input_df is not None, "Please provide either an input dataframe or path to file storing that dataframe."
         assert api_key is not None, "Please provide a Google Geocode API key under 'API_KEY' environment variable."
-        assert Path(output_folder).is_dir(), "Please provide a viable folder for saving results"
+        assert Path(output_folder).is_dir(), "Please provide a viable folder for saving results."
         self.input_df = self._load_input_df(input_df=input_df)
-        self._make_unique_locations_df(input_df=self.input_df)
-        if supplementary_results:
-            self.supplementary_results = self._load_supplementary_results(supplementary_results=supplementary_results)
+        if supplementary_df:
+            self.supplementary_df = self._load_supplementary_df(supplementary_df=supplementary_df)
         self.output_folder = Path(output_folder)
         self.api_key = api_key
         self.geocoded_results = []
+
+        # Engineer unique locations to geocode.
+        self._make_unique_locations_df(input_df=self.input_df, supplementary_df=self.supplementary_df)
 
     def _get_input_type(self, input: Path()):
         input_path = Path(input)
@@ -41,58 +46,46 @@ class NUFORCGeocoder:
         ), f"Filetype -> {input_type} cannot be used. Available input types are: {self.available_input_types}"
         return input_type
 
-    def _load_pickle(self, df_input):
-        with open(df_input, 'rb') as pickle_file:
+    def _load_pickle(self, input_df_path):
+        with open(input_df_path, 'rb') as pickle_file:
             data = pickle.load(pickle_file)
             return pd.DataFrame(data)
 
     def _load_input_df(self, input_df):
         if isinstance(input_df, pd.DataFrame):
-            return input_df
+            df = input_df
         elif isinstance(input_df, (str, Path)):
-            try:
-                input_df_path = Path(input_df)
-                if not input_df_path.exists():
-                    raise OSError(f"{input_df} does not exists or isn't accessible.")
-            except:
-                raise TypeError(f"{input_df_path} is not a valid filepath.")
+            input_df_path = Path(input_df)
+            input_df_type = self._get_input_type(input_df_path)
+            if input_df_type == '.pkl':
+                df = self._load_pickle(input_df_path=input_df_path)
+                logger.info(f"Input dataframe loaded from {input_df}.")
+        return df
 
-            df_input_type = self._get_input_type(input_df_path)
-            if df_input_type == '.pkl':
-                return self._load_pickle(df_input=input_df_path)
-
-    def _load_supplementary_results(self, supplementary_results):
-        if isinstance(supplementary_results, pd.DataFrame):
-            return supplementary_results
-        elif isinstance(supplementary_results, (str, Path)):
-            try:
-                path = Path(supplementary_results)
-                if not path.exists():
-                    raise TypeError(f"Supplementary results {path} does not exists or isn't accessible.")
-            except:
-                raise TypeError(f"{path} is not a valid filepath.")
-            path_filetype = self._get_input_type(path)
-            if path_filetype == '.pkl':
-                data = self._load_pickle(df_input=path)
+    def _load_supplementary_df(self, supplementary_df):
+        if isinstance(supplementary_df, pd.DataFrame):
+            df = supplementary_df
+        elif isinstance(supplementary_df, (str, Path)):
+            input_df_path = Path(supplementary_df)
+            input_df_type = self._get_input_type(input_df_path)
+            if input_df_type == '.pkl':
+                data = self._load_pickle(input_df_path=input_df_path)
 
             df = pd.DataFrame(data)
-            df = pd.DataFrame(df['raw_address'].to_list(), columns=self.unique_location_parts).merge(
-                df[df.columns[1:]], left_index=True, right_index=True
-            )
-            logger.info(f'Supplementary results loaded from {path}')
-            return df
+            logger.info(f'Supplementary results loaded from {input_df_path}')
+        return df
 
-    def _make_unique_locations_df(self, input_df):
+    def _make_unique_locations_df(self, input_df, supplementary_df):
         assert isinstance(input_df, pd.DataFrame), "Need to provide input dataframe."
-        locations = ['city', 'state', 'state_abbreviation', 'country']
-        cols_to_select = [col for col in input_df.columns if col in locations]
-        df = input_df[cols_to_select].copy()
+        df = input_df[self.address_locations].copy()
         df.drop_duplicates(inplace=True)
-        self.unique_location_parts = cols_to_select
+        if supplementary_df is not None:
+            common_cols = [col for col in supplementary_df.columns if col in input_df.columns]
+            df = df.merge(supplementary_df, on=common_cols, how='left')
         self.unique_locations_df = df
 
     def _geocode_single_address(self, raw_address, api_key):
-        logger.info(f"Geocoding {raw_address}...")
+        logger.debug(f"Geocoding {raw_address}...")
         geocoder = Geocoder(raw_address=raw_address, google_api_key=api_key)
         geocoder.geocode()
         return geocoder.results
@@ -101,28 +94,62 @@ class NUFORCGeocoder:
         path = Path(self.output_folder)
         path.mkdir(parents=True, exist_ok=True)
         date_today = date.today().strftime('%Y_%m_%d')
-        filename_path = path / f"geocoded_results_{date_today}.pkl"
-        with open(filename_path, "wb") as f:
+        results_path = path / f"geocoded_results.pkl"
+
+        with open(results_path, "wb") as f:
             pickle.dump(self.geocoded_results, f)
+        logger.info(f"Geocoded results saved @ {results_path}.")
+
+    def _save_geocoded_df(self):
+        path = Path(self.output_folder)
+        path.mkdir(parents=True, exist_ok=True)
+        date_today = date.today().strftime('%Y_%m_%d')
+        geocoded_df_path = path / f"geocoded_df.pkl"
+
+        with open(geocoded_df_path, "wb") as f:
+            pickle.dump(self.geocoded_df, f)
+        logger.info(f"Geocoded dataframe saved @ {geocoded_df_path}.")
 
     def geocode(self):
-        # Ensure geocoding results container is empty.
-        self.geocoded_results = []
         assert (
             self.unique_locations_df is not None
         ), "Couldn't access unique locations dataframe. Check if you've properly loaded the input dataframe."
-        logger.info(f"Found {len(self.unique_locations_df)} unique locations to geocode.")
-        for row in self.unique_locations_df.iterrows():
-            raw_address = row[1].values
-            self.geocoded_results.append(self._geocode_single_address(raw_address=raw_address, api_key=self.api_key))
 
-        geocoded_df = pd.DataFrame(self.geocoded_results)
-        geocoded_df = pd.DataFrame(geocoded_df['raw_address'].to_list(), columns=self.unique_location_parts).merge(
-            geocoded_df[geocoded_df.columns[1:]], left_index=True, right_index=True
-        )
-        self.geocoded_df = geocoded_df
-        self.output_df = self.input_df.merge(self.geocoded_df, on=self.unique_location_parts)
-        self._save_geocoded_results()
+        # Empty the geocoded_results container.
+        self.geocoded_results = []
+
+        # Initialize a unique_locations_df hard copy.
+        df = self.unique_locations_df.copy()
+        if self.supplementary_df is not None:
+            n_known_locations = len(df.loc[~(df['latitude'].isna()) & (~df['longitude'].isna())])
+            df = df.loc[(df['latitude'].isna()) & (df['longitude'].isna())][self.address_locations]
+            logger.info(f"Found {n_known_locations} locations within supplementary dataframe.")
+
+        if len(df) == 0:
+            logger.info("All submitted locations found in supplementary df.")
+            self.geocoded_df = self.supplementary_df
+            self.output_df = self.input_df.merge(self.geocoded_df, on=self.address_locations, how='left')
+            self._save_geocoded_df()
+
+        else:
+            logger.info(f"Found {len(df)} unique locations to geocode.")
+            for _, row in tqdm(df.iterrows(), total=len(df)):
+                raw_address = list(row.values)
+                self.geocoded_results.append(self._geocode_single_address(raw_address=raw_address, api_key=self.api_key))
+
+            geocoded_df = pd.DataFrame(self.geocoded_results)
+            geocoded_df = pd.DataFrame(geocoded_df['raw_address'].to_list(), columns=self.address_locations).merge(
+                geocoded_df[geocoded_df.columns[1:]], left_index=True, right_index=True, how='left'
+            )
+
+            if self.supplementary_df is not None:
+                self.geocoded_df = pd.concat([geocoded_df, self.supplementary_df])
+            else:
+                self.geocoded_df = geocoded_df
+
+            self.output_df = self.input_df.merge(self.geocoded_df, on=self.address_locations, how='left')
+            self._save_geocoded_results()
+            self._save_geocoded_df()
 
     def save_events(self):
         path = Path(self.output_folder)
@@ -130,7 +157,6 @@ class NUFORCGeocoder:
         date_today = date.today().strftime('%Y_%m_%d')
 
         filename_path = path / f"events_{date_today}.pkl"
-        metadata_filename = path / f"events_metadata_{date_today}.pkl"
         with open(filename_path, "wb") as f:
             pickle.dump(self.events, f)
 
