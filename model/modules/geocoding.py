@@ -207,8 +207,12 @@ class Geocoder:
             response_json = response.json()
             results['response'] = response_json
             results['status'] = response_json.get('status')
-            results['latitude'] = response_json['results'][0]['geometry']['location']['lat']
-            results['longitude'] = response_json['results'][0]['geometry']['location']['lng']
+            if results['status'] == "OK":
+                results['latitude'] = response_json['results'][0]['geometry']['location']['lat']
+                results['longitude'] = response_json['results'][0]['geometry']['location']['lng']
+            else:
+                results['latitude'] = None
+                results['longitude'] = None
         return results
 
     def geocode(self):
