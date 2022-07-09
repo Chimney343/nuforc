@@ -10,27 +10,27 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 logger = logging.getLogger("model.modules.utility")
 
 
-def get_page(url, n_scraping_retries=10, page_type=''):
+def get_page(url, n_scraping_retries=10, page_label=''):
     attempt = 0
     while attempt != n_scraping_retries:
         try:
             page = requests.get(url, timeout=5)
-            logger.debug(f"{page_type} {url} downloaded.")
+            logger.debug(f"{page_label} {url} downloaded.")
             return page
         except (ConnectTimeout, ConnectionError, ReadTimeout) as e:
             attempt += 1
             if attempt != n_scraping_retries:
                 logger.warning(
-                    f"{page_type} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
+                    f"{page_label} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
                 )
             elif attempt == n_scraping_retries:
-                logger.critical(f"{page_type} {url} download failed after max retries.")
+                logger.critical(f"{page_label} {url} download failed after max retries.")
                 return None
 
 
 def make_month_root_lookup(n_scraping_retries=10):
     url = "http://www.nuforc.org/webreports/ndxevent.html"
-    page = get_page(url=url, n_scraping_retries=n_scraping_retries, page_type='Month page root lookup')
+    page = get_page(url=url, n_scraping_retries=n_scraping_retries, page_label='Month page root lookup')
     if page.status_code == 200:
         try:
             soup = BeautifulSoup(page.text, "html.parser")

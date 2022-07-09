@@ -8,10 +8,15 @@ load_dotenv()  # take environment variables from .env.
 Scraper settings.
 """
 SCRAPING_MODE = 'timespan'
-TIMESPAN_START = "1900-01"
-TIMESPAN_END = "2030-01"
+TIMESPAN_START = "2022-06-10"
+TIMESPAN_END = "2022-06-20"
 N_SCRAPING_RETRIES = 20
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
+
+"""
+Dashboard settings.
+"""
+DASHBOARD_APP_DIR = 'model/dashboard'
 
 """
 API keys.
