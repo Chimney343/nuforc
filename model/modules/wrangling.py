@@ -6,10 +6,9 @@ import parsedatetime
 import us
 from iso3166 import countries
 
-from model.lookups.geography_lookups import (CAN_PROVINCE_NAMES,
-                                             NON_ISO_3166_COUNTRY_NAMES)
-from model.modules.regexes import REGEX_DICT
+from model.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
 from model.modules.models import NUFORCEvent
+from model.modules.regexes import REGEX_DICT
 
 logger = logging.getLogger("model.modules.wrangling")
 
@@ -43,19 +42,18 @@ class RawEventProcessor:
 
         return NUFORCEvent(
             url=self.report_url,
-            occurred_time = extract_time(raw_event=raw_event, time_type="occurred_time"),
-            reported_time = extract_time(raw_event=raw_event, time_type="reported_time"),
-            entered_as_time = extract_time(raw_event=raw_event, time_type="entered_as_time"),
-            shape = extract_shape(raw_event=raw_event),
-            duration = extract_duration(raw_event=raw_event),
-            city = extract_city(raw_event=raw_event),
-            state = extract_state(raw_event=raw_event),
-            state_abbreviation = extract_state_abbreviation(raw_event=raw_event),
-            country = extract_country(raw_event=raw_event),
-            description = extract_description(raw_event=raw_event),
-            report_ok = self.is_raw_event_correct,
-            raw_event = self.raw_event,
-
+            occurred_time=extract_time(raw_event=raw_event, time_type="occurred_time"),
+            reported_time=extract_time(raw_event=raw_event, time_type="reported_time"),
+            entered_as_time=extract_time(raw_event=raw_event, time_type="entered_as_time"),
+            shape=extract_shape(raw_event=raw_event),
+            duration=extract_duration(raw_event=raw_event),
+            city=extract_city(raw_event=raw_event),
+            state=extract_state(raw_event=raw_event),
+            state_abbreviation=extract_state_abbreviation(raw_event=raw_event),
+            country=extract_country(raw_event=raw_event),
+            description=extract_description(raw_event=raw_event),
+            report_ok=self.is_raw_event_correct,
+            raw_event=self.raw_event,
         )
 
     def read_event(self):
@@ -208,8 +206,7 @@ def get_valid_country_name(name, custom_lookup=NON_ISO_3166_COUNTRY_NAMES):
     name = name.lower()
 
     if custom_lookup.get(name) is not None:
-        valid_name = custom_lookup.get(name)
-        return valid_name
+        return custom_lookup.get(name)
     elif countries.get(name, None) is not None:
         valid_name = countries.get(name)[0]
         return valid_name

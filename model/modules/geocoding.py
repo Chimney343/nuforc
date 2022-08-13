@@ -18,6 +18,7 @@ class NUFORCGeocoder:
     address_locations = ['city', 'state', 'state_abbreviation', 'country']
     supplementary_df = None
     output_df = None
+
     def __init__(
         self,
         input_df: Union[pd.DataFrame, Path],
@@ -135,7 +136,9 @@ class NUFORCGeocoder:
             logger.info(f"Found {len(df)} unique locations to geocode.")
             for _, row in tqdm(df.iterrows(), total=len(df)):
                 raw_address = list(row.values)
-                self.geocoded_results.append(self._geocode_single_address(raw_address=raw_address, api_key=self.api_key))
+                self.geocoded_results.append(
+                    self._geocode_single_address(raw_address=raw_address, api_key=self.api_key)
+                )
 
             geocoded_df = pd.DataFrame(self.geocoded_results)
             geocoded_df = pd.DataFrame(geocoded_df['raw_address'].to_list(), columns=self.address_locations).merge(

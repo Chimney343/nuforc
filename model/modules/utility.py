@@ -1,5 +1,5 @@
+import datetime
 import logging
-from datetime import datetime
 from urllib.parse import urljoin
 
 import requests
@@ -37,11 +37,12 @@ def make_month_root_lookup(n_scraping_retries=10):
             monthly_event_summary_tag_list = list(soup.find_all("a", href=True))[1:-1]
             lookup = {}
             for tag in monthly_event_summary_tag_list:
-                month = datetime.strptime(tag['href'][4:10], '%Y%m')
+                month = datetime.datetime.strptime(tag['href'][4:10], '%Y%m')
                 monthly_event_summary_url = urljoin("http://www.nuforc.org/webreports/", tag["href"])
                 lookup[month] = monthly_event_summary_url
             return lookup
-        except:
+        except Exception as e:
+            logger.info(f'{e}')
             return None
     else:
         raise ConnectionError(
@@ -59,7 +60,6 @@ def is_date(string, fuzzy=False):
     try:
         parse(string, fuzzy=fuzzy)
         return True
-
     except ValueError:
         return False
 

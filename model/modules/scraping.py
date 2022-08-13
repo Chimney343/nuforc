@@ -10,9 +10,9 @@ import validators
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from dateutil.relativedelta import *
+from tqdm.autonotebook import tqdm
 
-from model.modules.utility import (get_page, is_date, last_day_of_month,
-                                   make_month_root_lookup)
+from model.modules.utility import get_page, is_date, last_day_of_month, make_month_root_lookup
 from model.modules.wrangling import RawEventProcessor, parse_time
 
 logger = logging.getLogger("model.modules.scraping")
@@ -20,12 +20,6 @@ logger = logging.getLogger("model.modules.scraping")
 
 class NUFORCScraper:
     available_scraping_modes = ["full", "timespan"]
-    timespan_start = None
-    timespan_end = None
-    output_folder = None
-    parsed_month_root_pages = None
-    event_lookup = None
-    month_root_urls_to_scrape = None
 
     def __init__(
         self,
@@ -37,9 +31,7 @@ class NUFORCScraper:
     ):
         # Setting up lookups.
         self.month_to_url_lookup = make_month_root_lookup(n_scraping_retries=n_scraping_retries)
-        assert (
-            self.month_to_url_lookup
-        ), f"Unable to connect with NUFORC monthly event summary page after {n_scraping_retries} retries."
+
         self.url_to_month_lookup = {url: month for month, url in self.month_to_url_lookup.items()}
 
         # Setting up scraping mode.
@@ -57,8 +49,12 @@ class NUFORCScraper:
                 timespan_start=timespan_start, timespan_end=timespan_end
             )
 
-        self.timespan = self._calculate_timespan()
+        self.timespan_in_months = self._calculate_timespan_in_months()
         self.n_scraping_retries = n_scraping_retries
+        self.output_folder = None
+        self.parsed_month_root_pages = None
+        self.event_lookup = None
+        self.month_root_urls_to_scrape = None
         self.output_folder = output_folder
 
     def _validate_timespan_boundaries(self, timespan_start, timespan_end):
@@ -67,8 +63,13 @@ class NUFORCScraper:
         if not is_date(timespan_end):
             raise ValueError(f"{timespan_end} is not a valid date format.")
 
+        timespan_start = parse(timespan_start)
+        timespan_end = parse(timespan_end)
+
         if timespan_start > timespan_end:
-            raise ValueError(f"Timespan start can't be higher than timespan start: {timespan_start} > {timespan_end}")
+            raise ValueError(
+                f"Timespan start can't be higher than timespan_in_months start: {timespan_start} > {timespan_end}"
+            )
         return timespan_start, timespan_end
 
     def _cast_datestring_to_datetime_year_and_month(self, date):
@@ -77,32 +78,32 @@ class NUFORCScraper:
         :param date:
         :return:
         """
+        logger.info(date, type(date))
         date = parse(date)
         date = date.strftime("%Y-%m")
         date = datetime.strptime(date, "%Y-%m")
         return date
 
-    def _calculate_timespan(self):
+    def _calculate_timespan_in_months(self):
         """
-        Parses timespan start month and timespan end month and calculates months in between.
+        Parses timespan_in_months start month and timespan_in_months end month and calculates months in between.
         :return:
         """
-        timespan_start_month = self._cast_datestring_to_datetime_year_and_month(self.timespan_start)
-        # Add one month to timespan end so the calculated range 'catches' the original final month.
-        timespan_end_month = self._cast_datestring_to_datetime_year_and_month(self.timespan_end) + relativedelta(
-            months=+1
-        )
+        timespan_start_month = self.timespan_start
+        # Add one month to timespan_in_months end so the calculated range 'catches' the original final month.
+        timespan_end_month = self.timespan_end + relativedelta(months=+1)
 
         return list(
             OrderedDict(
-                ((timespan_start_month + timedelta(_)).strftime(r"%Y-%m"), None)
+                ((timespan_start_month + timedelta(_)).replace(day=1), None)
                 for _ in range((timespan_end_month - timespan_start_month).days)
             ).keys()
         )
 
-    def _select_month_root_urls_to_scrape(self):
-        timespan = [self._cast_datestring_to_datetime_year_and_month(month) for month in self.timespan]
-        urls = [self.month_to_url_lookup.get(month) for month in timespan]
+    def select_month_root_urls_to_scrape(self, timespan_in_months=None):
+        if timespan_in_months is None:
+            timespan_in_months = self.timespan_in_months
+        urls = [self.month_to_url_lookup.get(month) for month in timespan_in_months]
         urls = [url for url in urls if url is not None]
         return urls
 
@@ -118,15 +119,18 @@ class NUFORCScraper:
         if response and response.status_code == 200:
             return BeautifulSoup(response.text, "html.parser")
 
-    def _parse_month_root_pages(self, month_root_pages, n_scraping_retries):
+    def parse_month_root_pages(self, month_root_pages, n_scraping_retries):
         futures = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             future_to_url = {
                 executor.submit(self.parse_month_root_page, url, n_scraping_retries): url for url in month_root_pages
             }
-            for future in concurrent.futures.as_completed(future_to_url):
+            for future in tqdm(
+                concurrent.futures.as_completed(future_to_url),
+                total=len(month_root_pages),
+                desc="Sifting through month root pages. ",
+            ):
                 url = future_to_url[future]
-                logger.info((f"Month root page @ {url} scraped."))
                 try:
                     data = future.result()
                     futures[url] = data
@@ -147,17 +151,16 @@ class NUFORCScraper:
 
     def _make_event_url_lookup(self, parsed_month_root_pages):
         event_lookup = {}
-        for page in parsed_month_root_pages.values():
+        for page in tqdm(
+            parsed_month_root_pages.values(), total=len(parsed_month_root_pages), desc="Reading event dates. "
+        ):
             page_lookup = self.get_event_url_from_parsed_month_root_page(page)
             event_lookup.update(page_lookup)
 
         if self.scraping_mode == 'timespan':
-            timespan_end = parse_time(self.timespan_end)
-            timespan_start = parse_time(self.timespan_start)
-
             filtered_event_lookup = {}
             for event_date, event_url in event_lookup.items():
-                if timespan_start <= event_date <= timespan_end:
+                if self.timespan_start <= event_date <= self.timespan_end:
                     filtered_event_lookup[event_date] = event_url
             return filtered_event_lookup
         return event_lookup
@@ -172,9 +175,11 @@ class NUFORCScraper:
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             event_to_url = {
                 executor.submit(self.scrape_event, event_url, self.n_scraping_retries): event_url
-                for event_url in self.event_lookup.values()
+                for event_url in event_urls
             }
-            for future in concurrent.futures.as_completed(event_to_url):
+            for future in tqdm(
+                concurrent.futures.as_completed(event_to_url), total=len(event_urls), desc="Reading events. "
+            ):
                 event_url = event_to_url[future]
                 try:
                     event = future.result()
@@ -189,12 +194,13 @@ class NUFORCScraper:
         if self.scraping_mode == 'full':
             self.month_root_urls_to_scrape = self.month_to_url_lookup.values()
         elif self.scraping_mode == 'timespan':
-            self.month_root_urls_to_scrape = self._select_month_root_urls_to_scrape()
+            self.month_root_urls_to_scrape = self.select_month_root_urls_to_scrape()
 
-        self.parsed_month_root_pages = self._parse_month_root_pages(
+        self.parsed_month_root_pages = self.parse_month_root_pages(
             month_root_pages=self.month_root_urls_to_scrape, n_scraping_retries=self.n_scraping_retries
         )
         self.event_lookup = self._make_event_url_lookup(parsed_month_root_pages=self.parsed_month_root_pages)
+        logger.info(f"Scraping events from {min(self.event_lookup)} to {max(self.event_lookup)}.")
         self.events = self._scrape_multiple_events(event_urls=self.event_lookup.values())
 
     def save_events(self):
@@ -206,8 +212,10 @@ class NUFORCScraper:
         metadata_filename = path / f"events_metadata_{date_today}.pkl"
         with open(filename_path, "wb") as f:
             pickle.dump(self.events, f)
+            logger.info(f"Events saved @ {filename_path}")
         # with open(metadata_filename, "wb") as f:
         #     pickle.dump(self.events_metadata, f)
+
 
 class EventScraper:
     def __init__(self, report_url, n_scraping_retries=10):
@@ -266,4 +274,4 @@ class EventScraper:
 
     def scrape(self):
         self.event = self._process_event()
-        logger.info((f"Report @ {self.report_url} scraped."))
+        logger.debug((f"Report @ {self.report_url} scraped."))

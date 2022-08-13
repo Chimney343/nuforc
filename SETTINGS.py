@@ -8,7 +8,7 @@ load_dotenv()  # take environment variables from .env.
 Scraper settings.
 """
 SCRAPING_MODE = 'timespan'
-TIMESPAN_START = "2022-06-10"
+TIMESPAN_START = "2022-6-10"
 TIMESPAN_END = "2022-06-20"
 N_SCRAPING_RETRIES = 20
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
