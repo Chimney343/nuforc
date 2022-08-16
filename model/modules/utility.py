@@ -1,5 +1,5 @@
+import datetime
 import logging
-from datetime import datetime
 from urllib.parse import urljoin
 
 import requests
@@ -10,38 +10,39 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 logger = logging.getLogger("model.modules.utility")
 
 
-def get_page(url, n_scraping_retries=10, page_type=''):
+def get_page(url, n_scraping_retries=10, page_label=''):
     attempt = 0
     while attempt != n_scraping_retries:
         try:
             page = requests.get(url, timeout=5)
-            logger.debug(f"{page_type} {url} downloaded.")
+            logger.debug(f"{page_label} {url} downloaded.")
             return page
         except (ConnectTimeout, ConnectionError, ReadTimeout) as e:
             attempt += 1
             if attempt != n_scraping_retries:
                 logger.warning(
-                    f"{page_type} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
+                    f"{page_label} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
                 )
             elif attempt == n_scraping_retries:
-                logger.critical(f"{page_type} {url} download failed after max retries.")
+                logger.critical(f"{page_label} {url} download failed after max retries.")
                 return None
 
 
 def make_month_root_lookup(n_scraping_retries=10):
     url = "http://www.nuforc.org/webreports/ndxevent.html"
-    page = get_page(url=url, n_scraping_retries=n_scraping_retries, page_type='Month page root lookup')
+    page = get_page(url=url, n_scraping_retries=n_scraping_retries, page_label='Month page root lookup')
     if page.status_code == 200:
         try:
             soup = BeautifulSoup(page.text, "html.parser")
             monthly_event_summary_tag_list = list(soup.find_all("a", href=True))[1:-1]
             lookup = {}
             for tag in monthly_event_summary_tag_list:
-                month = datetime.strptime(tag['href'][4:10], '%Y%m')
+                month = datetime.datetime.strptime(tag['href'][4:10], '%Y%m')
                 monthly_event_summary_url = urljoin("http://www.nuforc.org/webreports/", tag["href"])
                 lookup[month] = monthly_event_summary_url
             return lookup
-        except:
+        except Exception as e:
+            logger.info(f'{e}')
             return None
     else:
         raise ConnectionError(
@@ -59,7 +60,6 @@ def is_date(string, fuzzy=False):
     try:
         parse(string, fuzzy=fuzzy)
         return True
-
     except ValueError:
         return False
 
