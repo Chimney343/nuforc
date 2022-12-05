@@ -1,7 +1,7 @@
 import logging.config
 
 import SETTINGS
-from model.modules.scraping import NUFORCScraper
+from src.nuforc.modules.scraping import NUFORCScraper
 
 logging.config.dictConfig(SETTINGS.LOGGING_CONFIG)
 logger = logging.getLogger("root")

@@ -14,9 +14,14 @@ N_SCRAPING_RETRIES = 20
 OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
 
 """
+Geocoder settings.
+"""
+
+
+"""
 Dashboard settings.
 """
-DASHBOARD_APP_DIR = 'model/dashboard'
+DASHBOARD_APP_DIR = 'src/nuforc/dashboard'
 
 """
 API keys.

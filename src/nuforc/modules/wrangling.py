@@ -6,9 +6,9 @@ import parsedatetime
 import us
 from iso3166 import countries
 
-from model.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
-from model.modules.models import NUFORCEvent
-from model.modules.regexes import REGEX_DICT
+from src.nuforc.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
+from src.nuforc.modules.models import NUFORCEvent
+from src.nuforc.modules.regexes import REGEX_DICT
 
 logger = logging.getLogger("model.modules.wrangling")
 
@@ -197,6 +197,7 @@ def get_valid_country_name(name, custom_lookup=NON_ISO_3166_COUNTRY_NAMES):
     Returns:
 
     """
+
     # Characters to remove.
     characters_to_remove = "+:,"
     pattern = "[" + characters_to_remove + "]"
@@ -229,13 +230,12 @@ def get_country_from_location(location):
     match = regex.findall(location)
     if match is not None and match != []:
         match = match[-1] if len(match) > 1 else match[0]
-
     if "/" in match:
         return get_valid_country_name(match.split("/")[0])
     elif "," in match:
         return get_valid_country_name(match.split(",")[0])
     else:
-        get_valid_country_name(match)
+        return get_valid_country_name(match)
 
 
 def get_city_from_location(location):
