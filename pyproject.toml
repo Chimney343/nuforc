@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "nuforc"
+version = "0.1.0"
+description = "Scrape and analyze NUFORC data."
+authors = ["Chimney"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+beautifulsoup4 = "4.10.0"
+geopandas = "0.10.2"
+iso3166 = "2.0.2"
+pandas = "1.4.1"
+parsedatetime = "2.6"
+python-dotenv = "0.20.0"
+python-dateutil = "2.8.2"
+requests = "2.27.1"
+tqdm = "4.63.1"
+us = "2.0.2"
+validators = "0.18.2"
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "3.6.0a4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
