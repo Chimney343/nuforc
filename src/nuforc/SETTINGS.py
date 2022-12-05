@@ -1,9 +1,21 @@
-import os
+from os import environ
+from dataclasses import dataclass
+from datetime import date
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables from .env.
 
+@dataclass(frozen=True)
+class ScraperSettings:
+    scraping_mode: str = 'timespan'
+    timespan_start: str = date.today().strftime("%Y/%m/%d")
+    timespan_end = (date.today() - timedelta(days=30)).strftime("%Y/%m/%d")
+    n_scraping_retries: int = 30
+    output_folder = environ.get("OUTPUT_FOLDER") or 'data'
+
+DEFAULT_ENGINE_SETTINGS = ScraperSettings()
 """
 Scraper settings.
 """
@@ -11,7 +23,7 @@ SCRAPING_MODE = 'timespan'
 TIMESPAN_START = "2022-6-10"
 TIMESPAN_END = "2022-06-20"
 N_SCRAPING_RETRIES = 20
-OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER")
+OUTPUT_FOLDER = environ.get("OUTPUT_FOLDER")
 
 """
 Geocoder settings.
@@ -21,13 +33,13 @@ Geocoder settings.
 """
 Dashboard settings.
 """
-DASHBOARD_APP_DIR = 'src/nuforc/dashboard'
+DASHBOARD_APP_DIR = 'dashboard'
 
 """
 API keys.
 """
 # Google Geocoding API key.
-API_KEY = os.getenv("API_KEY")
+API_KEY = environ.get("API_KEY")
 
 """
 Logger settings.

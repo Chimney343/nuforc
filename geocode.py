@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pandas as pd
 
-import SETTINGS
-from src.nuforc.modules.geocoding import NUFORCGeocoder
+from src.nuforc import SETTINGS
+from src.nuforc.geocoding import NUFORCGeocoder
 
 logging.config.dictConfig(SETTINGS.LOGGING_CONFIG)
 logger = logging.getLogger("root")

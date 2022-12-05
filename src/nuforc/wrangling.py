@@ -7,8 +7,8 @@ import us
 from iso3166 import countries
 
 from src.nuforc.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
-from src.nuforc.modules.models import NUFORCEvent
-from src.nuforc.modules.regexes import REGEX_DICT
+from src.nuforc.models import NUFORCEvent
+from src.nuforc.regexes import REGEX_DICT
 
 logger = logging.getLogger("model.modules.wrangling")
 

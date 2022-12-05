@@ -12,8 +12,8 @@ from dateutil.parser import parse
 from dateutil.relativedelta import *
 from tqdm.autonotebook import tqdm
 
-from src.nuforc.modules.utility import get_page, is_date, last_day_of_month, make_month_root_lookup
-from src.nuforc.modules.wrangling import RawEventProcessor, parse_time
+from src.nuforc.utility import get_page, is_date, last_day_of_month, make_month_root_lookup
+from src.nuforc.wrangling import RawEventProcessor, parse_time
 
 logger = logging.getLogger("model.modules.scraping")
 
