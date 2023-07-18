@@ -6,9 +6,9 @@ import parsedatetime
 import us
 from iso3166 import countries
 
-from src.nuforc.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
-from src.nuforc.models import NUFORCEvent
-from src.nuforc.regexes import REGEX_DICT
+from nuforc.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
+# from nuforc.models import NUFORCEvent
+from nuforc.regexes import REGEX_DICT
 
 logger = logging.getLogger("model.modules.wrangling")
 
@@ -60,10 +60,15 @@ class RawEventProcessor:
         event = self.process_event()
         return event
 
+def preprocess_text(response):
 
-def extract_description(raw_event):
+    text = ' '.join(text).strip()
+    return text
+
+def extract_description(response):
+    text = preprocess_text(response)
     try:
-        info = "".join(raw_event.splitlines()[2:]).strip()
+        info = "".join(text.splitlines()[2:]).strip()
         return info
     except:
         return "unparsed"
