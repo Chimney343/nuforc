@@ -24,7 +24,8 @@ class NuforcSpider(scrapy.Spider):
 
     def parse_event_page(self, response):
         l = ItemLoader(item=NuforcEventItem(), response=response)
-        l.add_xpath('description', "//body//text()")
+        l.add_xpath('occurred_time', "//body//text()")
+        # l.add_xpath('description', "//body//text()")
         item = l.load_item()
 
         yield item

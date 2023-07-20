@@ -42,9 +42,9 @@ class RawEventProcessor:
 
         return NUFORCEvent(
             url=self.report_url,
-            occurred_time=extract_time(raw_event=raw_event, time_type="occurred_time"),
-            reported_time=extract_time(raw_event=raw_event, time_type="reported_time"),
-            entered_as_time=extract_time(raw_event=raw_event, time_type="entered_as_time"),
+            occurred_time=extract_time(raw_text=raw_event, time_type="occurred_time"),
+            reported_time=extract_time(raw_text=raw_event, time_type="reported_time"),
+            entered_as_time=extract_time(raw_text=raw_event, time_type="entered_as_time"),
             shape=extract_shape(raw_event=raw_event),
             duration=extract_duration(raw_event=raw_event),
             city=extract_city(raw_event=raw_event),
@@ -61,8 +61,7 @@ class RawEventProcessor:
         return event
 
 def preprocess_text(response):
-
-    text = ' '.join(text).strip()
+    text = ' '.join(response).strip()
     return text
 
 def extract_description(response):
@@ -135,8 +134,8 @@ def extract_duration(raw_event):
         return "unparsed"
 
 
-def extract_time(raw_event, time_type):
-    match = REGEX_DICT[time_type].findall(raw_event)
+def extract_time(raw_text, time_type):
+    match = REGEX_DICT[time_type].findall(raw_text)
     if match is not None:
         try:
             match = [s for s in match[0] if s != ""][1:]
