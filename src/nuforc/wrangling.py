@@ -6,7 +6,11 @@ import parsedatetime
 import us
 from iso3166 import countries
 
-from nuforc.lookups.geography_lookups import CAN_PROVINCE_NAMES, NON_ISO_3166_COUNTRY_NAMES
+from nuforc.lookups.geography_lookups import (
+    CAN_PROVINCE_NAMES,
+    NON_ISO_3166_COUNTRY_NAMES,
+)
+
 # from nuforc.models import NUFORCEvent
 from nuforc.regexes import REGEX_DICT
 
@@ -44,7 +48,9 @@ class RawEventProcessor:
             url=self.report_url,
             occurred_time=extract_time(raw_text=raw_event, time_type="occurred_time"),
             reported_time=extract_time(raw_text=raw_event, time_type="reported_time"),
-            entered_as_time=extract_time(raw_text=raw_event, time_type="entered_as_time"),
+            entered_as_time=extract_time(
+                raw_text=raw_event, time_type="entered_as_time"
+            ),
             shape=extract_shape(raw_event=raw_event),
             duration=extract_duration(raw_event=raw_event),
             city=extract_city(raw_event=raw_event),
@@ -60,14 +66,15 @@ class RawEventProcessor:
         event = self.process_event()
         return event
 
+
 def preprocess_text(response):
-    text = ' '.join(response).strip()
+    text = " ".join(response).strip()
     return text
 
-def extract_description(response):
-    text = preprocess_text(response)
+
+def extract_description(event_text):
     try:
-        info = "".join(text.splitlines()[2:]).strip()
+        info = "".join(event_text.splitlines()[2:]).strip()
         return info
     except:
         return "unparsed"
@@ -126,6 +133,9 @@ def extract_country(raw_event):
 
 
 def extract_duration(raw_event):
+    if isinstance(raw_event, list):
+        raw_event = raw_event[0]
+
     match = REGEX_DICT["duration"].search(raw_event)
     if match is not None:
         time_string = match.group()
@@ -180,7 +190,9 @@ def get_state_info(location):
             return state_info
 
     elif canadian_state_abbreviation_regex.search(location) is not None:
-        canadian_state_abbreviation = canadian_state_abbreviation_regex.search(location).group()
+        canadian_state_abbreviation = canadian_state_abbreviation_regex.search(
+            location
+        ).group()
         canadian_state = CAN_PROVINCE_NAMES.get(canadian_state_abbreviation)
         if canadian_state is not None:
             state_info = {

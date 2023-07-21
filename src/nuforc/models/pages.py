@@ -1,5 +1,6 @@
-from .. client import NUFORC_HTTP_Client
+from ..client import NUFORC_HTTP_Client
 from requests import Response
+
 
 class NUFORCBasicPage:
     def __init__(self, page_response: Response):

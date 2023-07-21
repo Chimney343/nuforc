@@ -7,19 +7,21 @@ from dotenv import load_dotenv
 
 load_dotenv()  # take environment variables from .env.
 
+
 @dataclass(frozen=True)
 class ScraperSettings:
-    scraping_mode: str = 'timespan'
+    scraping_mode: str = "timespan"
     timespan_start: str = date.today().strftime("%Y/%m/%d")
     timespan_end = (date.today() - timedelta(days=30)).strftime("%Y/%m/%d")
     n_scraping_retries: int = 30
-    output_folder = environ.get("OUTPUT_FOLDER") or 'data'
+    output_folder = environ.get("OUTPUT_FOLDER") or "data"
+
 
 DEFAULT_ENGINE_SETTINGS = ScraperSettings()
 """
 Scraper settings.
 """
-SCRAPING_MODE = 'timespan'
+SCRAPING_MODE = "timespan"
 TIMESPAN_START = "2022-6-10"
 TIMESPAN_END = "2022-06-20"
 N_SCRAPING_RETRIES = 20
@@ -33,7 +35,7 @@ Geocoder settings.
 """
 Dashboard settings.
 """
-DASHBOARD_APP_DIR = 'dashboard'
+DASHBOARD_APP_DIR = "dashboard"
 
 """
 API keys.
@@ -47,7 +49,9 @@ Logger settings.
 
 LOGGING_CONFIG = {
     "version": 1,
-    "formatters": {"simple": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"}},
+    "formatters": {
+        "simple": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"}
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",

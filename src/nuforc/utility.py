@@ -10,7 +10,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, ReadTimeout
 logger = logging.getLogger("model.modules.utility")
 
 
-def get_page(url, n_scraping_retries=10, page_label=''):
+def get_page(url, n_scraping_retries=10, page_label=""):
     attempt = 0
     while attempt != n_scraping_retries:
         try:
@@ -24,25 +24,33 @@ def get_page(url, n_scraping_retries=10, page_label=''):
                     f"{page_label} {url} download failed. Retries left: {n_scraping_retries - attempt}. Cause: {e}"
                 )
             elif attempt == n_scraping_retries:
-                logger.critical(f"{page_label} {url} download failed after max retries.")
+                logger.critical(
+                    f"{page_label} {url} download failed after max retries."
+                )
                 return None
 
 
 def make_month_root_lookup(n_scraping_retries=10):
     url = "http://www.nuforc.org/webreports/ndxevent.html"
-    page = get_page(url=url, n_scraping_retries=n_scraping_retries, page_label='Month page root lookup')
+    page = get_page(
+        url=url,
+        n_scraping_retries=n_scraping_retries,
+        page_label="Month page root lookup",
+    )
     if page.status_code == 200:
         try:
             soup = BeautifulSoup(page.text, "html.parser")
             monthly_event_summary_tag_list = list(soup.find_all("a", href=True))[1:-1]
             lookup = {}
             for tag in monthly_event_summary_tag_list:
-                month = datetime.datetime.strptime(tag['href'][4:10], '%Y%m')
-                monthly_event_summary_url = urljoin("http://www.nuforc.org/webreports/", tag["href"])
+                month = datetime.datetime.strptime(tag["href"][4:10], "%Y%m")
+                monthly_event_summary_url = urljoin(
+                    "http://www.nuforc.org/webreports/", tag["href"]
+                )
                 lookup[month] = monthly_event_summary_url
             return lookup
         except Exception as e:
-            logger.info(f'{e}')
+            logger.info(f"{e}")
             return None
     else:
         raise ConnectionError(
