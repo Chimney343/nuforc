@@ -11,85 +11,36 @@ from nuforc.lookups.geography_lookups import (
     NON_ISO_3166_COUNTRY_NAMES,
 )
 
-# from nuforc.models import NUFORCEvent
 from nuforc.regexes import REGEX_DICT
-
 logger = logging.getLogger("model.modules.wrangling")
 
 """
-RAW REPORT ANALYSIS
+Raw NUFORC event text wrangling functions.
 """
-
-
-class RawEventProcessor:
-    def __init__(self, raw_event, report_url=None):
-        self.raw_event = raw_event
-        self.is_raw_event_correct = self._validate_raw_event(raw_event)
-        self.report_url = report_url
-
-    def _validate_raw_event(self, raw_event):
-        failed_raw_event_indicators = [
-            "Unable to download report",
-            "Blank report",
-            "Unable to parse BeautifulSoup from downloaded page.",
-        ]
-        if not isinstance(raw_event, str):
-            return False
-        elif any(indicator in raw_event for indicator in failed_raw_event_indicators):
-            return False
-        else:
-            return True
-
-    def process_event(self, raw_event=None):
-        if raw_event is None:
-            raw_event = self.raw_event
-
-        return NUFORCEvent(
-            url=self.report_url,
-            occurred_time=extract_time(raw_text=raw_event, time_type="occurred_time"),
-            reported_time=extract_time(raw_text=raw_event, time_type="reported_time"),
-            entered_as_time=extract_time(
-                raw_text=raw_event, time_type="entered_as_time"
-            ),
-            shape=extract_shape(raw_event=raw_event),
-            duration=extract_duration(raw_event=raw_event),
-            city=extract_city(raw_event=raw_event),
-            state=extract_state(raw_event=raw_event),
-            state_abbreviation=extract_state_abbreviation(raw_event=raw_event),
-            country=extract_country(raw_event=raw_event),
-            description=extract_description(raw_event=raw_event),
-            report_ok=self.is_raw_event_correct,
-            raw_event=self.raw_event,
-        )
-
-    def read_event(self):
-        event = self.process_event()
-        return event
-
 
 def preprocess_text(response):
     text = " ".join(response).strip()
     return text
 
 
-def extract_description(event_text):
+def extract_description(text):
     try:
-        info = "".join(event_text.splitlines()[2:]).strip()
+        info = "".join(text.splitlines()[2:]).strip()
         return info
     except:
         return "unparsed"
 
 
-def extract_url(raw_event):
+def extract_url(text):
     try:
-        info = raw_event.splitlines()[0].strip()
+        info = text.splitlines()[0].strip()
         return info
     except:
         return "unparsed"
 
 
-def extract_city(raw_event):
-    location_match = REGEX_DICT["location"].search(raw_event)
+def extract_city(text):
+    location_match = REGEX_DICT["location"].search(text)
     if location_match is not None:
         location_match = location_match.group()
         try:
@@ -99,8 +50,8 @@ def extract_city(raw_event):
             return "unparsed"
 
 
-def extract_state_abbreviation(raw_event):
-    location_match = REGEX_DICT["location"].search(raw_event)
+def extract_state_abbreviation(text):
+    location_match = REGEX_DICT["location"].search(text)
     if location_match is not None:
         location_match = location_match.group()
         try:
@@ -110,8 +61,8 @@ def extract_state_abbreviation(raw_event):
             return "unparsed"
 
 
-def extract_state(raw_event):
-    location_match = REGEX_DICT["location"].search(raw_event)
+def extract_state(text):
+    location_match = REGEX_DICT["location"].search(text)
     if location_match is not None:
         location_match = location_match.group()
         try:
@@ -121,8 +72,8 @@ def extract_state(raw_event):
             return "unparsed"
 
 
-def extract_country(raw_event):
-    location_match = REGEX_DICT["location"].search(raw_event)
+def extract_country(text):
+    location_match = REGEX_DICT["location"].search(text)
     if location_match is not None:
         location_match = location_match.group()
         try:
@@ -132,11 +83,11 @@ def extract_country(raw_event):
             return "unparsed"
 
 
-def extract_duration(raw_event):
-    if isinstance(raw_event, list):
-        raw_event = raw_event[0]
+def extract_duration(text):
+    if isinstance(text, list):
+        text = text[0]
 
-    match = REGEX_DICT["duration"].search(raw_event)
+    match = REGEX_DICT["duration"].search(text)
     if match is not None:
         time_string = match.group()
         return parse_duration(time_string)
@@ -144,8 +95,8 @@ def extract_duration(raw_event):
         return "unparsed"
 
 
-def extract_time(raw_text, time_type):
-    match = REGEX_DICT[time_type].findall(raw_text)
+def extract_time(text, time_type):
+    match = REGEX_DICT[time_type].findall(text)
     if match is not None:
         try:
             match = [s for s in match[0] if s != ""][1:]
@@ -157,8 +108,8 @@ def extract_time(raw_text, time_type):
             return "unparsed"
 
 
-def extract_shape(raw_event):
-    match = REGEX_DICT["shape"].search(raw_event)
+def extract_shape(text):
+    match = REGEX_DICT["shape"].search(text)
     if match is not None:
         info = match.group()
         return info
