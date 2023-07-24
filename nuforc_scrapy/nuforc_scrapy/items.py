@@ -91,10 +91,3 @@ class NuforcEventItem(Item):
         output_processor=lambda x: final_processing(x, extract_description),
     )
     raw_text = Field(input_processor=preprocess_text, output_processor=pick_first)
-
-    # # Housekeeping fields
-    # url = Field()
-    # project = Field()
-    # spider = Field()
-    # server = Field()
-    # date = Field()

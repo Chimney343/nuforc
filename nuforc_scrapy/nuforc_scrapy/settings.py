@@ -91,3 +91,17 @@ ROBOTSTXT_OBEY = True
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+
+LOG_ENABLED = True
+LOG_LEVEL = 'DEBUG'
+LOG_STDOUT = False
+LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
+
+# Add this to enable the pickle export pipeline
+ITEM_PIPELINES = {
+    'nuforc_scrapy.pipelines.PickleExportPipeline': 100,
+}
+
+# Set the path where the pickle file will be stored
+PICKLE_EXPORT_FILE = 'nuforc.pickle'  # You can change the file name as you like
+
