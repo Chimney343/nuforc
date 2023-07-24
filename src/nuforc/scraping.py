@@ -12,12 +12,17 @@ from dateutil.parser import parse
 from dateutil.relativedelta import *
 from tqdm.autonotebook import tqdm
 
-from src.nuforc.utility import get_page, is_date, last_day_of_month, make_month_root_lookup
+from src.nuforc.utility import (
+    get_page,
+    is_date,
+    last_day_of_month,
+    make_month_root_lookup,
+)
 from src.nuforc.wrangling import RawEventProcessor, parse_time
 
 logger = logging.getLogger("model.modules.scraping")
 
-
+# TODO: Whole `scraping` module is now obsolete due to adoption of scrapy for scraping.
 class NUFORCScraper:
     available_scraping_modes = ["full", "timespan"]
 
@@ -27,12 +32,16 @@ class NUFORCScraper:
         timespan_start=None,
         timespan_end=None,
         n_scraping_retries=10,
-        output_folder='output',
+        output_folder="output",
     ):
         # Setting up lookups.
-        self.month_to_url_lookup = make_month_root_lookup(n_scraping_retries=n_scraping_retries)
+        self.month_to_url_lookup = make_month_root_lookup(
+            n_scraping_retries=n_scraping_retries
+        )
 
-        self.url_to_month_lookup = {url: month for month, url in self.month_to_url_lookup.items()}
+        self.url_to_month_lookup = {
+            url: month for month, url in self.month_to_url_lookup.items()
+        }
 
         # Setting up scraping mode.
         assert (
@@ -115,7 +124,9 @@ class NUFORCScraper:
         )
 
     def parse_month_root_page(self, url, n_scraping_retries):
-        response = self._get_month_root_page_response(month_root_url=url, n_scraping_retries=n_scraping_retries)
+        response = self._get_month_root_page_response(
+            month_root_url=url, n_scraping_retries=n_scraping_retries
+        )
         if response and response.status_code == 200:
             return BeautifulSoup(response.text, "html.parser")
 
@@ -123,7 +134,10 @@ class NUFORCScraper:
         futures = {}
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             future_to_url = {
-                executor.submit(self.parse_month_root_page, url, n_scraping_retries): url for url in month_root_pages
+                executor.submit(
+                    self.parse_month_root_page, url, n_scraping_retries
+                ): url
+                for url in month_root_pages
             }
             for future in tqdm(
                 concurrent.futures.as_completed(future_to_url),
@@ -144,7 +158,10 @@ class NUFORCScraper:
     def get_event_url_from_parsed_month_root_page(self, parsed_month_root_page):
         event_tags = parsed_month_root_page.find_all("a", href=True)[1:]
         events = {
-            parse_time(tag.text): urljoin("http://www.nuforc.org/webreports/", tag["href"]) for tag in event_tags
+            parse_time(tag.text): urljoin(
+                "http://www.nuforc.org/webreports/", tag["href"]
+            )
+            for tag in event_tags
         }
 
         return events
@@ -152,12 +169,14 @@ class NUFORCScraper:
     def _make_event_url_lookup(self, parsed_month_root_pages):
         event_lookup = {}
         for page in tqdm(
-            parsed_month_root_pages.values(), total=len(parsed_month_root_pages), desc="Reading event dates. "
+            parsed_month_root_pages.values(),
+            total=len(parsed_month_root_pages),
+            desc="Reading event dates. ",
         ):
             page_lookup = self.get_event_url_from_parsed_month_root_page(page)
             event_lookup.update(page_lookup)
 
-        if self.scraping_mode == 'timespan':
+        if self.scraping_mode == "timespan":
             filtered_event_lookup = {}
             for event_date, event_url in event_lookup.items():
                 if self.timespan_start <= event_date <= self.timespan_end:
@@ -166,7 +185,9 @@ class NUFORCScraper:
         return event_lookup
 
     def scrape_event(self, event_url, n_scraping_retries):
-        event_scraper = EventScraper(report_url=event_url, n_scraping_retries=n_scraping_retries)
+        event_scraper = EventScraper(
+            report_url=event_url, n_scraping_retries=n_scraping_retries
+        )
         event_scraper.scrape()
         return event_scraper.event
 
@@ -174,11 +195,15 @@ class NUFORCScraper:
         futures = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=32) as executor:
             event_to_url = {
-                executor.submit(self.scrape_event, event_url, self.n_scraping_retries): event_url
+                executor.submit(
+                    self.scrape_event, event_url, self.n_scraping_retries
+                ): event_url
                 for event_url in event_urls
             }
             for future in tqdm(
-                concurrent.futures.as_completed(event_to_url), total=len(event_urls), desc="Reading events. "
+                concurrent.futures.as_completed(event_to_url),
+                total=len(event_urls),
+                desc="Reading events. ",
             ):
                 event_url = event_to_url[future]
                 try:
@@ -191,22 +216,29 @@ class NUFORCScraper:
         return futures
 
     def scrape(self):
-        if self.scraping_mode == 'full':
+        if self.scraping_mode == "full":
             self.month_root_urls_to_scrape = self.month_to_url_lookup.values()
-        elif self.scraping_mode == 'timespan':
+        elif self.scraping_mode == "timespan":
             self.month_root_urls_to_scrape = self.select_month_root_urls_to_scrape()
 
         self.parsed_month_root_pages = self.parse_month_root_pages(
-            month_root_pages=self.month_root_urls_to_scrape, n_scraping_retries=self.n_scraping_retries
+            month_root_pages=self.month_root_urls_to_scrape,
+            n_scraping_retries=self.n_scraping_retries,
         )
-        self.event_lookup = self._make_event_url_lookup(parsed_month_root_pages=self.parsed_month_root_pages)
-        logger.info(f"Scraping events from {min(self.event_lookup)} to {max(self.event_lookup)}.")
-        self.events = self._scrape_multiple_events(event_urls=self.event_lookup.values())
+        self.event_lookup = self._make_event_url_lookup(
+            parsed_month_root_pages=self.parsed_month_root_pages
+        )
+        logger.info(
+            f"Scraping events from {min(self.event_lookup)} to {max(self.event_lookup)}."
+        )
+        self.events = self._scrape_multiple_events(
+            event_urls=self.event_lookup.values()
+        )
 
     def save_events(self):
         path = Path(self.output_folder)
         path.mkdir(parents=True, exist_ok=True)
-        date_today = date.today().strftime('%Y_%m_%d')
+        date_today = date.today().strftime("%Y_%m_%d")
 
         filename_path = path / f"events_{date_today}.pkl"
         metadata_filename = path / f"events_metadata_{date_today}.pkl"
@@ -222,7 +254,7 @@ class EventScraper:
         assert validators.url(report_url), f"{report_url} is not a valid URL."
         self.report_url = report_url
         self.n_scraping_retries = n_scraping_retries
-        self.status = 'unprocessed'
+        self.status = "unprocessed"
         self.page = None
         self.start_time = None
         self.end_time = None
@@ -248,7 +280,7 @@ class EventScraper:
         """
         self._get_event_page()
         if self.status_code == 200:
-            if self.page.text == '':
+            if self.page.text == "":
                 self.raw_event = "Blank report"
             else:
                 self.raw_event = self._parse_event_page()
@@ -263,11 +295,13 @@ class EventScraper:
 
         # Event processing starts here.
         self._get_raw_event()
-        raw_event_processor = RawEventProcessor(raw_event=self.raw_event, report_url=self.report_url)
+        raw_event_processor = RawEventProcessor(
+            raw_event=self.raw_event, report_url=self.report_url
+        )
         event = raw_event_processor.read_event()
         # Event processing ends here.
 
-        self.status = 'processed'
+        self.status = "processed"
         self.end_time = datetime.now()
         self.duration = self.end_time - self.start_time
         return event

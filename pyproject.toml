@@ -18,6 +18,9 @@ requests = "2.27.1"
 tqdm = "4.63.1"
 us = "2.0.2"
 validators = "0.18.2"
+scrapy = "^2.9.0"
+geopy = "^2.3.0"
+black = "^23.7.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "3.6.0a4"

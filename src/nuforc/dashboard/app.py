@@ -8,7 +8,7 @@ app.base_layer(
     visible=True,
     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     subdomains=None,
-    attribution='(C) OpenStreetMap contributors',
+    attribution="(C) OpenStreetMap contributors",
 )
 
 
