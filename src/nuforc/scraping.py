@@ -22,7 +22,7 @@ from src.nuforc.wrangling import RawEventProcessor, parse_time
 
 logger = logging.getLogger("model.modules.scraping")
 
-
+# TODO: Whole `scraping` module is now obsolete due to adoption of scrapy for scraping.
 class NUFORCScraper:
     available_scraping_modes = ["full", "timespan"]
 
