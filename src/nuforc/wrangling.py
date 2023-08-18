@@ -228,6 +228,10 @@ def get_city_from_location(location):
     else:
         return location.strip()
 
+#TODO: Consider moving this to geocoder lib.
+def create_address(city, state, country):
+    values = [str(val) for val in (city, state, country) if val is not None]
+    return ', '.join(values)
 
 def parse_duration(t):
     t = clean_time_string(t)
