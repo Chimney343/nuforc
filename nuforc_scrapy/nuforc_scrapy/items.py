@@ -3,21 +3,22 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/items.html
 import sys
-from scrapy import Item, Field
 from functools import *
 from pathlib import Path
 
+from scrapy import Field, Item
+
 sys.path.append(str(Path.cwd().parents[2] / "src"))
 from nuforc.wrangling import (
-    preprocess_text,
-    extract_time,
-    extract_shape,
-    extract_duration,
-    extract_state,
-    extract_state_abbreviation,
+    extract_city,
     extract_country,
     extract_description,
-    extract_city,
+    extract_duration,
+    extract_shape,
+    extract_state,
+    extract_state_abbreviation,
+    extract_time,
+    preprocess_text,
 )
 
 
@@ -91,3 +92,6 @@ class NuforcEventItem(Item):
         output_processor=lambda x: final_processing(x, extract_description),
     )
     raw_text = Field(input_processor=preprocess_text, output_processor=pick_first)
+
+    # TODO: Add a field containing some calculated fields, like the address made with city, state and country values.
+    # Start off from a custom BookItemLoader.
