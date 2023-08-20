@@ -19,7 +19,9 @@ from nuforc.wrangling import (
     extract_state_abbreviation,
     extract_time,
     preprocess_text,
+    hash_string
 )
+from nuforc.geocoding.wrangling import join_columns
 
 
 def pick_first(iterable):
@@ -93,5 +95,16 @@ class NuforcEventItem(Item):
     )
     raw_text = Field(input_processor=preprocess_text, output_processor=pick_first)
 
-    # TODO: Add a field containing some calculated fields, like the address made with city, state and country values.
-    # Start off from a custom BookItemLoader.
+    # Calculated fields.
+    hash = Field()
+    address = Field()
+
+    def set_hash_field(self):
+        self['hash'] = hash_string(self['raw_text'])
+
+    def set_address_field(self):
+        self['address'] = join_columns(city=self['city'], state=self['state'], country=self['country'])
+
+
+
+
