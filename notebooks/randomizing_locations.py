@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[130]:
+# In[7]:
 
 
 import logging.config
@@ -19,8 +19,8 @@ sys.path.append('..')
 from IPython.display import display
 import random
 import math
-from tqdm import tqdm
-
+from tqdm.autonotebook import tqdm
+from dotenv import load_dotenv
 from src.nuforc import SETTINGS
 from src.nuforc.utility import *
 from src.nuforc.geocoding.geocoder import Geolocator
@@ -31,33 +31,35 @@ from shapely.geometry import Point
 from shapely.geometry import Polygon
 from geopandas import GeoSeries
 from scipy.stats import mode
+load_dotenv()
+import os
 
 
 # #### Data loading
 
-# In[136]:
-
-
-Path(r'.\\data\\nuforc_events.csv')
-
-
-# In[ ]:
+# In[8]:
 
 
 # Events
-raw = pd.read_csv(Path(r'..\\data\\nuforc_events.csv'))
+raw = pd.read_csv(Path(os.getenv('DATA_DIR')) / 'raw_events' / 'events_2023_07_21.csv')
 raw = replace_unparsed_with_none(raw)
 raw['address'] = raw.apply(lambda row: join_columns(row['city'], row['state'], row['country']), axis=1)
 
 # Coords
-coords = pd.read_csv(Path(r'..\\gis\\csv\\geolocated_addresses.csv'), names=['address', 'latitude', 'longitude'])
+coords = pd.read_csv(Path(os.getenv('DATA_DIR')) / 'gis' / 'csv' / 'geolocated_addresses.csv', names=['address', 'latitude', 'longitude'])
 
 
-# In[141]:
+# In[10]:
+
+
+raw.to_csv(Path(os.getenv('DATA_DIR')) / 'raw_events' / 'events_2023_07_21.csv', index=False)
+
+
+# In[4]:
 
 
 # Zipcode polygons
-polygons = gpd.read_file(Path(r'..\\gis\\shp\\cb_2018_us_zcta510_500k.shp'))
+polygons = gpd.read_file(Path(os.getenv('DATA_DIR')) / 'gis' / 'shp' / 'cb_2018_us_zcta510_500k.shp')
 
 
 # In[188]:

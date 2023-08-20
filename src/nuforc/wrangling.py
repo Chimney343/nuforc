@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import re
 from datetime import datetime
@@ -112,7 +113,7 @@ def extract_shape(text):
     match = REGEX_DICT["shape"].search(text)
     if match is not None:
         info = match.group()
-        return info
+        return info.lower()
     else:
         return "unparsed"
 
@@ -274,3 +275,8 @@ def clean_time_string(t):
     pattern = re.compile("|".join(replacements.keys()))
     t = pattern.sub(lambda m: replacements[re.escape(m.group(0))], t)
     return t
+
+def hash_string(s):
+    hash_object = hashlib.sha256()
+    hash_object.update(s.encode())
+    return hash_object.hexdigest()

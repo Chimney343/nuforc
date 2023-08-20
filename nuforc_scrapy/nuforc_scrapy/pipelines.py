@@ -5,24 +5,46 @@
 
 
 # useful for handling different item types with a single interface
+import csv
+import os
+import shutil
+from dotenv import load_dotenv
+from pathlib import Path
+from datetime import datetime
 
-import pickle
 
-class PickleExportPipeline:
-    def __init__(self, file_path):
-        self.file_path = file_path
-        self.items = []
+class CsvPipeline:
+    def __init__(self):
+        load_dotenv()
+        self.validate_directory_tree()
+        self.output_dir = Path(os.getenv("DATA_DIR"))
 
-    @classmethod
-    def from_crawler(cls, crawler):
-        settings = crawler.settings
-        file_path = settings.get('PICKLE_EXPORT_FILE')
-        return cls(file_path)
+        current_date = datetime.now().strftime('%Y_%m_%d')
+        self.output_filepath = self.output_dir / "raw_scrapy_output" / f"events_{current_date}.csv"
+        self.output_copy_filepath = self.output_dir / "raw_events" / f"events_{current_date}.csv"
+        self.file = open(self.output_filepath, "w", newline="", encoding="utf-8")
+        self.writer = None
+
+    def validate_directory_tree(self):
+        paths = [
+            Path(os.getenv("DATA_DIR")),
+            Path(os.getenv("DATA_DIR")) / "raw_scrapy_output",
+            Path(os.getenv("DATA_DIR")) / "raw_events",
+            Path(os.getenv("DATA_DIR")) / "gis",
+            Path(os.getenv("DATA_DIR")) / "visualisation",
+        ]
+        for path in paths:
+            if not path.exists():
+                path.mkdir(parents=True, exist_ok=True)
 
     def process_item(self, item, spider):
-        self.items.append(item)
+        if self.writer is None:
+            fieldnames = item.keys()
+            self.writer = csv.DictWriter(self.file, fieldnames=fieldnames)
+            self.writer.writeheader()
+        self.writer.writerow(item)
         return item
 
     def close_spider(self, spider):
-        with open(self.file_path, 'wb') as f:
-            pickle.dump(self.items, f)
+        self.file.close()
+        shutil.copy2(self.output_filepath, self.output_copy_filepath)
