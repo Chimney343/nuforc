@@ -31,6 +31,12 @@ rtree = "^1.0.1"
 geodatasets = "^2023.3.0"
 folium = "^0.14.0"
 dash = "^2.12.1"
+dash-leaflet = "^0.1.28"
+datashader = "^0.15.2"
+bokeh = "2.4.1"
+holoviews = "^1.17.1"
+keplergl = "^0.3.2"
+isort = "^5.12.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyterlab = "3.6.0a4"
